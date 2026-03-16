@@ -79,8 +79,8 @@ Example: predictor says “up”, UP best ask = 0.45 → first order BUY UP @ 0.
 ## Setup
 
 ```bash
-git clone https://github.com/harmandhaliwal/polymarket-trading-bot.git
-cd polymarket-trading-bot
+git clone https://github.com/harmandhaliwal/Polymarket-15m-Up/Down-Trading-Bot.git
+cd Polymarket-15m-Up/Down-Trading-Bot
 npm install
 cp .env.temp .env
 # Edit .env and set PRIVATE_KEY (and any other vars you need)
