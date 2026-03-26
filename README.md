@@ -1,4 +1,4 @@
-# Polymarket Copytrading Bot
+# Polymarket Trading Bot - CopyTrading Bot
 [TypeScript](https://www.typescriptlang.org/) [Node](https://nodejs.org/) [License: ISC](https://opensource.org/licenses/ISC) [Build](package.json) [Polymarket](https://polymarket.com/)
 
 > The top wallets on Polymarket aren't smarter than you. They're just faster. Now you can be too.
