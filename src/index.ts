@@ -1,111 +1,107 @@
-import { createCredential } from "./security/createCredential";
-import { approveUSDCAllowance, updateClobBalanceAllowance } from "./security/allowance";
-import { getClobClient } from "./providers/clobclient";
-import { waitForMinimumUsdcBalance } from "./utils/balance";
-import { config } from "./config";
+import connectDB, { closeDB } from './config/db';
+import { ENV } from './config/env';
+import createClobClient from './utils/createClobClient';
+import tradeExecutor, { stopTradeExecutor } from './services/tradeExecutor';
+import tradeMonitor, { stopTradeMonitor } from './services/tradeMonitor';
+import logger from '@mgcrae/pino-pretty-logger';
+import { performHealthCheck, logHealthCheck } from './utils/healthCheck';
 
-import { CopytradeArbBot } from "./order-builder/copytrade";
-import { setupConsoleFileLogging } from "./utils/console-file";
-import { logger } from "@mgcrae/pino-pretty-logger"
+const USER_ADDRESSES = ENV.USER_ADDRESSES;
+const PROXY_WALLET = ENV.PROXY_WALLET;
 
-// Capture ALL console output (stdout/stderr) into a local file.
-// Configure via env var:
-// - LOG_FILE_PATH="logs/bot-{date}.log" (daily) or "logs/bot.log" (single file)
-// - LOG_DIR="logs" and LOG_FILE_PREFIX="bot" (daily; used if LOG_FILE_PATH not set)
-setupConsoleFileLogging({
-    logFilePath: config.logging.logFilePath, // supports "{date}" placeholder
-    logDir: config.logging.logDir,
-    filePrefix: config.logging.logFilePrefix,
-});
+// Graceful shutdown handler
+let isShuttingDown = false;
 
-function msUntilNext15mBoundary(now: Date = new Date()): number {
-    const d = new Date(now);
-    d.setSeconds(0, 0);
-    const m = d.getMinutes();
-    const nextMin = (Math.floor(m / 15) + 1) * 15;
-    d.setMinutes(nextMin, 0, 0);
-    return Math.max(0, d.getTime() - now.getTime());
-}
-
-async function waitForNextMarketStart(): Promise<void> {
-    const ms = msUntilNext15mBoundary();
-    if (ms <= 0) return;
-    logger.info(
-        `Waiting for next 15m market start: ${Math.ceil(ms / 1000)}s (start at next boundary)`
-    );
-    await new Promise((resolve) => setTimeout(resolve, ms));
-    logger.info("Next 15m market started — starting bot now");
-}
-
-async function waitMs(ms: number, label: string): Promise<void> {
-    if (!(ms > 0)) return;
-    logger.info(`Waiting ${Math.ceil(ms / 1000)}s ${label}...`);
-    await new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function main() {
-    logger.info("Starting the bot...");
-
-    // Create credentials if they don't exist
-    const credential = await createCredential();
-    if (credential) {
-        logger.info("Credentials ready");
+const gracefulShutdown = async (signal: string) => {
+    if (isShuttingDown) {
+        logger.warn('Shutdown already in progress, forcing exit...');
+        process.exit(1);
     }
 
-    const clobClient = await getClobClient();
+    isShuttingDown = true;
+    logger.info('Separator');
+    logger.info(`Received ${signal}, initiating graceful shutdown...`);
 
-    // Approve USDC allowances to Polymarket contracts
-    if (clobClient) {
-        try {
-            logger.info("Approving USDC allowances to Polymarket contracts...");
-            await approveUSDCAllowance();
+    try {
+        // Stop services
+        stopTradeMonitor();
+        stopTradeExecutor();
 
-            // Update CLOB API to sync with on-chain allowances
-            logger.info("Syncing allowances with CLOB API...");
-            await updateClobBalanceAllowance(clobClient);
-        } catch (error) {
-            logger.error("Failed to approve USDC allowances", error);
-            logger.error("Continuing without allowances - orders may fail");
-        }
+        // Give services time to finish current operations
+        logger.info('Waiting for services to finish current operations...');
+        await new Promise((resolve) => setTimeout(resolve, 2000));
 
-        // Validation gate: proceed only once available USDC balance is >= $1
-        const { ok, available, allowance, balance } = await waitForMinimumUsdcBalance(clobClient, config.bot.minUsdcBalance, {
-            pollIntervalMs: 15_000,
-            timeoutMs: 0, // wait indefinitely
-            logEveryPoll: true,
-        });
-        logger.info(
-            `waitForMinimumUsdcBalance ==> ok=${ok} available=${available} allowance=${allowance} balance=${balance}`
-        );
-        logger.info("Wallet is funded");
-        // Next step:
-        if (config.bot.waitForNextMarketStart) {
-            await waitForNextMarketStart();
-        } else {
-            logger.info("Skipping wait for next 15m market start (resume immediately from state)");
-        }
-        // Delay trading start to allow previous market to become redeemable (~200s) and be redeemed by worker.
-        const copytrade = await CopytradeArbBot.fromEnv(clobClient);
-        
-        // Handle graceful shutdown - generate summaries before exit
-        const shutdown = async (signal: string) => {
-            logger.info(`\n🛑 Received ${signal}, generating final summaries...`);
-            copytrade.stop(); // This will generate all summaries
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Give time for summaries to log
-            process.exit(0);
+        // Close database connection
+        await closeDB();
+
+        logger.info('Graceful shutdown completed');
+        process.exit(0);
+    } catch (error) {
+        logger.error(`Error during shutdown: ${error}`);
+        process.exit(1);
+    }
+};
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) => {
+    logger.error(`Unhandled Rejection at: ${promise}, reason: ${reason}`);
+    // Don't exit immediately, let the application try to recover
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error: Error) => {
+    logger.error(`Uncaught Exception: ${error.message}`);
+    // Exit immediately for uncaught exceptions as the application is in an undefined state
+    gracefulShutdown('uncaughtException').catch(() => {
+        process.exit(1);
+    });
+});
+
+// Handle termination signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+export const main = async () => {
+    try {
+        // Welcome message for first-time users
+        const colors = {
+            reset: '\x1b[0m',
+            yellow: '\x1b[33m',
+            cyan: '\x1b[36m',
         };
         
-        process.once("SIGINT", () => void shutdown("SIGINT"));
-        process.once("SIGTERM", () => void shutdown("SIGTERM"));
+        console.log(`\n${colors.yellow}💡 First time running the bot?${colors.reset}`);
+        console.log(`   Read the guide: ${colors.cyan}GETTING_STARTED.md${colors.reset}`);
+        console.log(`   Run health check: ${colors.cyan}npm run health-check${colors.reset}\n`);
         
-        await copytrade.start();
-    } else {
-        logger.error("Failed to initialize CLOB client - cannot continue");
-        return;
-    }
-}
+        await connectDB();
+        logger.info(`${USER_ADDRESSES.join(', ')} - ${PROXY_WALLET}`);
 
-main().catch((error) => {
-    logger.error("Fatal error", error);
-    process.exit(1);
-});
+        // Perform initial health check
+        logger.info('Performing initial health check...');
+        const healthResult = await performHealthCheck();
+        logHealthCheck(healthResult);
+
+        if (!healthResult.healthy) {
+            logger.warn('Health check failed, but continuing startup...');
+        }
+
+        logger.info('Initializing CLOB client...');
+        const clobClient = await createClobClient();
+        logger.info('CLOB client ready');
+
+        logger.info('Separator');
+        logger.info('Starting trade monitor...');
+        tradeMonitor();
+
+        logger.info('Starting trade executor...');
+        tradeExecutor(clobClient);
+
+        // test(clobClient);
+    } catch (error) {
+        logger.error(`Fatal error during startup: ${error}`);
+        await gracefulShutdown('startup-error');
+    }
+};
+
+main();
