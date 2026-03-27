@@ -8,29 +8,20 @@
 ## The Story
 
 I have a bad habit of checking leaderboards.
-
 Most people look at them once, feel vaguely bad, and close the tab. I started actually reading them. And what I noticed was strange: the same five or six wallets kept sitting at the top of completely unrelated markets. Bitcoin price calls. US election outcomes. Premier League results. Interest rate bets. Week after week, same names.
-
 At some point you stop calling it luck.
-
 So I did something that felt ridiculous: I stopped trading entirely for a few weeks and just watched those wallets. No code. No positions. Just obsessive wallet-stalking like a financial creep.
-
 Here's what I found. These accounts were not oracles. They weren't sitting on insider information. They just had three things I didn't:
-
 - **Speed.** They were in before the narrative formed.
 - **Discipline.** They sized correctly and didn't chase.
 - **Systems.** They weren't clicking buttons manually at 2am.
-
 That last one stuck with me.
-
 I tried building my own signal engine first. Custom logic, arbitrage plays, my own thesis. It worked for a couple months. Decent returns, nothing to write home about. Then it stopped working. Quietly, slowly, just grinding into losses until I killed it and stared at the logs wondering where the edge went.
-
 That's when the obvious question hit me like a freight train:
 
 **Why am I building my own edge when someone else already has one?**
 
 So I burned the arbitrage bot and built this instead. It finds the wallets already beating the market and mirrors their trades at your size, across every category on Polymarket, while you do literally anything else.
-
 You don't need to be the best trader on the platform. You need to know who is.
 
 ---
@@ -38,13 +29,9 @@ You don't need to be the best trader on the platform. You need to know who is.
 ## Is This For You?
 
 Pull up your last five trades on Polymarket.
-
 Now look up those same markets on the leaderboard and see where the top wallets entered.
-
 Did you beat them? Did you even come close?
-
 Probably not. And here's the thing: that's not a knowledge problem. You don't need more research. The top wallets are not necessarily smarter than you. They are faster, more systematic, and they don't second-guess entries at the last second. That's a tooling problem. This bot is the tool.
-
 It runs 24/7. It doesn't get tired. It doesn't hesitate. And it definitely doesn't close a winning position early because it got nervous.
 
 ---
@@ -52,33 +39,27 @@ It runs 24/7. It doesn't get tired. It doesn't hesitate. And it definitely doesn
 ## How It Works
 
 You can't read minds. You can read wallets.
-
 The bot opens a live WebSocket connection to Polymarket's order book and tracks the target wallets you configure through the CLOB API. When one of them moves, the signal comes in fast and gets evaluated before anything is placed.
 
 ### Covers every market, not just crypto
 
 The wallets worth following aren't just trading BTC. They're across every category on the site.
-
 This bot covers **crypto** (BTC, SOL, ETH, XRP and more), **politics**, **sports**, **world events**, and **economics**. Set `COPYTRADE_MARKETS` to a comma-separated list of slugs. Five markets or fifty, your call.
 
 ### Reacts in real time
 
 `websocketOrderbook` holds a persistent connection to Polymarket's CLOB market channel and keeps best bid and ask updated by token ID, continuously.
-
 When a tracked wallet moves, you get the signal before it's old news. No polling lag, no stale prices.
 
 ### Scales to your account, not theirs
 
 A whale putting in $5,000 on a market is not the same bet for you and your $800 account.
-
 The bot sizes positions relative to your balance. `COPYTRADE_SHARES` sets how many shares per trade. `COPYTRADE_MAX_BUY_COUNTS_PER_SIDE` limits how many times it buys per side so you don't accidentally concentrate everything into one signal.
 
 ### Has a brain, not just a trigger
 
 Not every signal deserves an order.
-
 `pricePredictor` grades every incoming signal before anything touches the CLOB. Only `BUY_UP` or `BUY_DOWN` with confidence above the threshold goes through. Everything else returns `HOLD` and the bot does nothing. That filter alone eliminated 68 bad trades in the backtest below.
-
 `COPYTRADE_PRICE_BUFFER` adds cushion against price drift at execution time. `BOT_MIN_USDC_BALANCE` puts a floor under your balance so the bot never trades on fumes.
 
 ---
@@ -120,15 +101,12 @@ The confidence filter skipped 68 of a possible 176 entries. The bot only took 10
 ### What People Are Saying
 
 > *"Let it paper trade for about a week, then turned on real size. Two and a half weeks in and I'm up around 17%. Config was easier than I expected."*
->
 > @basin_eth, Discord
 
 > *"What I like is it isn't dumb copy trading. The confidence gate cuts out a ton of junk signals. I would have clicked into a few of those by hand."*
->
 > @vee_pm, Telegram
 
 > *"Forked the repo, dropped my keys in .env, skimmed the README, hit run. Whole thing was maybe fifteen minutes."*
->
 > @northern_lights_bot, Telegram
 
 Running it live? Open a PR and add your results to the table.
@@ -138,7 +116,6 @@ Running it live? Open a PR and add your results to the table.
 ## Getting Started
 
 Free. Open source. MIT-friendly ISC license. Fork it, modify it, run it.
-
 Before you jump in, a few honest notes:
 
 ```
@@ -192,9 +169,7 @@ The bot ships with defaults that work. But defaults are a starting point, not a 
 ## About Your Keys
 
 Your private key never leaves your machine. It is loaded from `.env`, turned into a local `ethers.Wallet`, and used to sign orders locally. Only the signed payload is sent to Polymarket's CLOB API. No telemetry, no third-party storage, nothing external.
-
 Use a **dedicated wallet** funded just for this bot. Keep `PRIVATE_KEY` in `.env` and never commit it. If the key may have been exposed, generate a new wallet and move funds.
-
 Start with a few hundred to a couple thousand USDC. Watch it run for a few days, then scale up by adding USDC and increasing `COPYTRADE_SHARES`. Spot something wrong in the signing code? Open an issue.
 
 ---
@@ -231,7 +206,6 @@ bun --watch src/index.ts
 ## Risk Disclosure
 
 Prediction markets involve real financial risk. You can lose money. There is no guarantee this bot will be profitable. Past backtest results do not guarantee future performance.
-
 Only allocate capital you can afford to lose entirely. Understand each config setting before going live. This software is provided as-is with no warranty.
 
 ---
@@ -239,9 +213,7 @@ Only allocate capital you can afford to lose entirely. Understand each config se
 ## One Last Thing
 
 Right now, a wallet is entering a position on Polymarket that you would have missed.
-
 Not because you're not smart enough. Because you weren't watching, or weren't fast enough, or you second-guessed yourself one too many times.
-
 That's what this bot is for.
 
 **Fork it. Configure it. Fund it. Let it work.**
