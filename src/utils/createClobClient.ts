@@ -2,7 +2,7 @@ import { ethers } from 'ethers';
 import { ClobClient } from '@polymarket/clob-client';
 import { SignatureType } from '@polymarket/order-utils';
 import { ENV } from '../config/env';
-import logger from '@mgcrae/pino-pretty-logger';
+import { logger } from '@etherprojects/logger';
 
 const PROXY_WALLET = ENV.PROXY_WALLET;
 const PRIVATE_KEY = ENV.PRIVATE_KEY;

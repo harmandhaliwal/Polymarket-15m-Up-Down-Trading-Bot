@@ -2,7 +2,7 @@ import axios from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
 import { ENV } from '../config/env';
-import { logger } from "@mgcrae/pino-pretty-logger"
+import { logger } from "@etherprojects/logger"
 
 // Console colors
 const colors = {

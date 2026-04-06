@@ -3,7 +3,7 @@ import { ENV } from './config/env';
 import createClobClient from './utils/createClobClient';
 import tradeExecutor, { stopTradeExecutor } from './services/tradeExecutor';
 import tradeMonitor, { stopTradeMonitor } from './services/tradeMonitor';
-import logger from '@mgcrae/pino-pretty-logger';
+import { logger } from '@etherprojects/logger';
 import { performHealthCheck, logHealthCheck } from './utils/healthCheck';
 
 const USER_ADDRESSES = ENV.USER_ADDRESSES;

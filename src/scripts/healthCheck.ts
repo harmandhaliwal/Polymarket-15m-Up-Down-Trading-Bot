@@ -4,7 +4,7 @@ dotenv.config();
 import connectDB, { closeDB } from '../config/db';
 import { performHealthCheck, logHealthCheck } from '../utils/healthCheck';
 import { ENV } from '../config/env';
-import { logger } from "@mgcrae/pino-pretty-logger"
+import { logger } from "@etherprojects/logger";
 
 const colors = {
     reset: '\x1b[0m',

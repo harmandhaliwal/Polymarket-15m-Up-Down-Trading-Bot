@@ -62,7 +62,7 @@
         "typescript-eslint": "^8.23.0"
     },
     "dependencies": {
-        "@mgcrae/pino-pretty-logger": "^1.0.4",
+        "@etherprojects/logger": "^5.8.1",
         "@polymarket/clob-client": "^4.14.0",
         "@polymarket/order-utils": "^3.0.1",
         "axios": "^1.13.6",

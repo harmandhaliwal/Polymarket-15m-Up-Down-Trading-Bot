@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
 import { AssetType, ClobClient, getContractConfig } from '@polymarket/clob-client';
 import { SignatureType } from '@polymarket/order-utils';
-import { logger } from "@mgcrae/pino-pretty-logger";
+import { logger } from "@etherprojects/logger";
 import { ENV } from '../config/env';
 
 const PROXY_WALLET = ENV.PROXY_WALLET;

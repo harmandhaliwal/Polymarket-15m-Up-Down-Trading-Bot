@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv';
 import { ethers } from 'ethers';
 import { CopyStrategy, CopyStrategyConfig, parseTieredMultipliers } from './copyStrategy';
-import { logger } from "@mgcrae/pino-pretty-logger";
+import { logger } from "@etherprojects/logger";
 
 dotenv.config();
 

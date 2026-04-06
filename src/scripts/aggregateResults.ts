@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import logger from '@mgcrae/pino-pretty-logger';
+import { logger } from '@etherprojects/logger';
 
 // Colors
 const colors = {
